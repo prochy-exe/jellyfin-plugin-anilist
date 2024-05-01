@@ -300,6 +300,39 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
         }
 
         /// <summary>
+        /// Convert a Media object to a Season
+        /// </summary>
+        /// <returns></returns>
+        public Season ToSeason()
+        {
+            var result = new Season {
+                Overview = this.description,
+                ProductionYear = this.startDate.year,
+                PremiereDate = this.startDate?.ToDateTime(),
+                EndDate = this.endDate?.ToDateTime(),
+                CommunityRating = this.GetRating(),
+                RunTimeTicks = this.duration.HasValue ? TimeSpan.FromMinutes(this.duration.Value).Ticks : (long?)null,
+                Genres = this.GetGenres().ToArray(),
+                Tags = this.GetTagNames().ToArray(),
+                Studios = this.GetStudioNames().ToArray(),
+                ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, id.ToString(CultureInfo.InvariantCulture)}}
+            };
+
+            return result;
+        }
+
+        /// <summary>
+        /// Convert a Media object to an Episode
+        /// </summary>
+        /// <returns></returns>
+        public Episode ToEpisode()
+        {
+            return new Episode {
+                ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, id.ToString(CultureInfo.InvariantCulture)}}
+            };
+        }
+
+        /// <summary>
         /// Convert a Media object to a Movie
         /// </summary>
         /// <returns></returns>
