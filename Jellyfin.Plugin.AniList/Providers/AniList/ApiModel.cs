@@ -304,6 +304,29 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
         }
 
         /// <summary>
+        /// Convert a Media object to a Season
+        /// </summary>
+        /// <returns></returns>
+        public Season ToSeason()
+        {
+            PluginConfiguration config = Plugin.Instance.Configuration;
+            var result = new Season {
+                Overview = this.description,
+                ProductionYear = this.startDate.year,
+                PremiereDate = this.GetStartDate(),
+                EndDate = this.GetStartDate(),
+                CommunityRating = this.GetRating(),
+                RunTimeTicks = this.duration.HasValue ? TimeSpan.FromMinutes(this.duration.Value).Ticks : (long?)null,
+                Genres = this.GetGenres().ToArray(),
+                Tags = this.GetTagNames().ToArray(),
+                Studios = this.GetStudioNames().ToArray(),
+                ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, this.id.ToString()}}
+            };
+
+            return result;
+        }
+
+        /// <summary>
         /// Convert a Media object to a Movie
         /// </summary>
         /// <returns></returns>
@@ -321,6 +344,14 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
                 Genres = this.GetGenres().ToArray(),
                 Tags = this.GetTagNames().ToArray(),
                 Studios = this.GetStudioNames().ToArray(),
+                ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, this.id.ToString()}}
+            };
+        }
+
+        internal Episode ToEpisode()
+        {
+            PluginConfiguration config = Plugin.Instance.Configuration;
+            return new Episode {
                 ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, this.id.ToString()}}
             };
         }
