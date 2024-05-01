@@ -68,7 +68,13 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             {
                 if (language == "en")
                 {
-                    return this.title.english;
+                    if (this.title.english != null) 
+                    {
+                        return this.title.english;
+                    } else 
+                    {
+                        return this.title.romaji; 
+                    }
                 }
                 if (language == "jap")
                 {
