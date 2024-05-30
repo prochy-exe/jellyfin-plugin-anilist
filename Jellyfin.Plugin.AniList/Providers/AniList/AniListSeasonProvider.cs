@@ -43,29 +43,44 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             else
             {
                 var seriesId = info.SeriesProviderIds.GetOrDefault(ProviderNames.AniList);
-                seriesId = seriesId.ToString();
-                _log.LogInformation("Fetching info for id {Name}", seriesId);
-                MediaSearchResult seriesInfo;
-                seriesInfo = await _aniListApi.GetAnime(seriesId);
-                var searchName = seriesInfo.GetPreferredTitle(config.TitlePreference, "en");
-                _log.LogInformation("Anime name obtained: {Name}", searchName);
-                var seasonNumber = info.IndexNumber;
-                if (seasonNumber != null && searchName != null)
+                if (seriesId != null)
                 {
-                    if (seasonNumber > 1)
+                    seriesId = seriesId.ToString();
+                    _log.LogInformation("Fetching info for id {Name}", seriesId);
+                    MediaSearchResult seriesInfo = await _aniListApi.GetAnime(seriesId);
+                    
+                    if (seriesInfo != null)
                     {
-                        searchName = string.Join(" ", searchName, seasonNumber.ToString());
+                        var searchName = seriesInfo.GetPreferredTitle(config.TitlePreference, "en");
+                        _log.LogInformation("Anime name obtained: {Name}", searchName);
+                        var seasonNumber = info.IndexNumber;                        
+                        if (seasonNumber != null && searchName != null)
+                        {
+                            if (seasonNumber > 1)
+                            {
+                                searchName = string.Join(" ", searchName, seasonNumber.ToString());
+                            }
+                            _log.LogInformation("Start AniList season search... Searching({Name})", searchName);
+                            MediaSearchResult msr = await _aniListApi.Search_GetSeries(searchName, cancellationToken);
+                            
+                            if (msr != null)
+                            {
+                                media = await _aniListApi.GetAnime(msr.id.ToString());
+                            }
+                        }
+                        else
+                        {
+                            _log.LogInformation("Season number or searchName is null for {Name}", searchName);
+                        }
                     }
-                    _log.LogInformation("Start AniList season search... Searching({Name})", searchName);
-                    MediaSearchResult msr;
-                    msr = await _aniListApi.Search_GetSeries(searchName, cancellationToken);
-                    if (msr != null)
+                    else
                     {
-                        media = await _aniListApi.GetAnime(msr.id.ToString());
+                        _log.LogInformation("Series info is null for id {Name}", seriesId);
                     }
-                } else
+                }
+                else
                 {
-                  _log.LogInformation("Season is null for {Name}", searchName);  
+                    _log.LogInformation("Series id is null");
                 }
             }
 

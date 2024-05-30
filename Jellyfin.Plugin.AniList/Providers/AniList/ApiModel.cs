@@ -350,7 +350,6 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
 
         internal Episode ToEpisode()
         {
-            PluginConfiguration config = Plugin.Instance.Configuration;
             return new Episode {
                 ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, this.id.ToString()}}
             };
