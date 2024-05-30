@@ -33,50 +33,19 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
         {
             var result = new MetadataResult<Episode>();
             Media media = null;
-            PluginConfiguration config = Plugin.Instance.Configuration;
-
-            var aid = info.ProviderIds.GetOrDefault(ProviderNames.AniList);
-            if (!string.IsNullOrEmpty(aid))
+            var seasonId = info.SeasonProviderIds.GetOrDefault(ProviderNames.AniList);
+            if (seasonId != null)
             {
-                media = await _aniListApi.GetAnime(aid);
-            }
-            else
-            {
-                var seriesId = info.SeriesProviderIds.GetOrDefault(ProviderNames.AniList);
-                seriesId = seriesId.ToString();
-                _log.LogInformation("Fetching info for id {Name}", seriesId);
-                MediaSearchResult seriesInfo;
-                seriesInfo = await _aniListApi.GetAnime(seriesId);
-                var searchName = seriesInfo.GetPreferredTitle(config.TitlePreference, "en");
-                _log.LogInformation("Anime name obtained: {Name}", searchName);
-                var episodeNumber = info.ParentIndexNumber;
-                if (episodeNumber != null && searchName != null)
+                _log.LogInformation("Passing id from season {season}", seasonId);
+                if (int.TryParse(seasonId, out int id))
                 {
-                    if (episodeNumber > 1)
-                    {
-                        searchName = string.Join(" ", searchName, episodeNumber.ToString());
-                    }
-                    _log.LogInformation("Start AniList Episode search... Searching({Name})", searchName);
-                    MediaSearchResult msr;
-                    msr = await _aniListApi.Search_GetSeries(searchName, cancellationToken);
-                    if (msr != null)
-                    {
-                        media = await _aniListApi.GetAnime(msr.id.ToString());
-                    }
-                } else
-                {
-                  _log.LogInformation("Episode is null for {Name}", searchName);  
+                    media.id = id;
                 }
-            }
-
-            if (media != null)
-            {
                 result.HasMetadata = true;
                 result.Item = media.ToEpisode();
                 result.Provider = ProviderNames.AniList;
                 StoreImageUrl(media.id.ToString(), media.GetImageUrl(), "image");
             }
-
             return result;
         }
 
