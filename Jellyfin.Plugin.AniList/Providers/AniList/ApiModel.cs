@@ -309,7 +309,6 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
         /// <returns></returns>
         public Season ToSeason()
         {
-            PluginConfiguration config = Plugin.Instance.Configuration;
             var result = new Season {
                 Overview = this.description,
                 ProductionYear = this.startDate.year,
@@ -324,6 +323,17 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             };
 
             return result;
+        }
+
+        /// <summary>
+        /// Convert a Media object to an Episode
+        /// </summary>
+        /// <returns></returns>
+        public Episode ToEpisode()
+        {
+            return new Episode {
+                ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, this.id.ToString()}}
+            };
         }
 
         /// <summary>
@@ -344,13 +354,6 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
                 Genres = this.GetGenres().ToArray(),
                 Tags = this.GetTagNames().ToArray(),
                 Studios = this.GetStudioNames().ToArray(),
-                ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, this.id.ToString()}}
-            };
-        }
-
-        internal Episode ToEpisode()
-        {
-            return new Episode {
                 ProviderIds = new Dictionary<string, string>() {{ProviderNames.AniList, this.id.ToString()}}
             };
         }
