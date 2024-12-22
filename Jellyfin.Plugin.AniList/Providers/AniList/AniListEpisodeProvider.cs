@@ -32,7 +32,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             var aid = info.SeasonProviderIds.GetOrDefault(ProviderNames.AniList);
             if (!string.IsNullOrEmpty(aid))
             {
-                media = await _aniListApi.GetAnime(aid);
+                media = await _aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
             }
 
             if (media != null)
@@ -53,7 +53,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             var aid = searchInfo.ProviderIds.GetOrDefault(ProviderNames.AniList);
             if (!string.IsNullOrEmpty(aid))
             {
-                Media aid_result = await _aniListApi.GetAnime(aid).ConfigureAwait(false);
+                Media aid_result = await _aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
                 if (aid_result != null)
                 {
                     results.Add(aid_result.ToSearchResult());

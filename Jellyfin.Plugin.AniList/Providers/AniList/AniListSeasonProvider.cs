@@ -33,7 +33,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             var aid = info.ProviderIds.GetOrDefault(ProviderNames.AniList);
             if (!string.IsNullOrEmpty(aid))
             {
-                media = await _aniListApi.GetAnime(aid);
+                media = await _aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -45,11 +45,11 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
                     {
                         if (seasonIndex == 1)
                         {
-                            media = await _aniListApi.GetAnime(seriesId);
+                            media = await _aniListApi.GetAnime(seriesId, cancellationToken).ConfigureAwait(false);
                         }
                         else if (seasonIndex > 1)
                         {
-                            Media seriesInfo = await _aniListApi.GetAnime(seriesId);
+                            Media seriesInfo = await _aniListApi.GetAnime(seriesId, cancellationToken).ConfigureAwait(false);
                             var seriesName = seriesInfo.GetPreferredTitle(config.TitlePreference, "en");
                             if (seriesName != null)
                             {
@@ -57,7 +57,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
                                 MediaSearchResult msr = await _aniListApi.Search_GetSeries(searchQuery, cancellationToken);
                                 if (msr != null)
                                 {
-                                    media = await _aniListApi.GetAnime(msr.id.ToString());
+                                    media = await _aniListApi.GetAnime(msr.id.ToString(), cancellationToken).ConfigureAwait(false);
                                 } 
                                 else 
                                 {
@@ -103,7 +103,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             var aid = searchInfo.ProviderIds.GetOrDefault(ProviderNames.AniList);
             if (!string.IsNullOrEmpty(aid))
             {
-                Media aid_result = await _aniListApi.GetAnime(aid).ConfigureAwait(false);
+                Media aid_result = await _aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
                 if (aid_result != null)
                 {
                     results.Add(aid_result.ToSearchResult());

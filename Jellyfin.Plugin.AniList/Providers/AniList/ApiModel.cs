@@ -302,8 +302,8 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             var result = new Season {
                 Overview = this.description,
                 ProductionYear = this.startDate.year,
-                PremiereDate = this.GetStartDate(),
-                EndDate = this.GetStartDate(),
+                PremiereDate = this.startDate?.ToDateTime(),
+                EndDate = this.endDate?.ToDateTime(),
                 CommunityRating = this.GetRating(),
                 RunTimeTicks = this.duration.HasValue ? TimeSpan.FromMinutes(this.duration.Value).Ticks : (long?)null,
                 Genres = this.GetGenres().ToArray(),
