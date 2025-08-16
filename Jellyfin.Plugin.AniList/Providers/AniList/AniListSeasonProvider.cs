@@ -12,18 +12,10 @@ using Microsoft.Extensions.Logging;
 //API v2
 namespace Jellyfin.Plugin.AniList.Providers.AniList
 {
-    public class AniListSeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasOrder
+    public class AniListSeasonProvider(AniListApi aniListApi, IHttpClientFactory httpClientFactory, ILogger<AniListSeriesProvider> logger) : IRemoteMetadataProvider<Season, SeasonInfo>, IHasOrder
     {
-        private readonly ILogger<AniListSeasonProvider> _log;
-        private readonly AniListApi _aniListApi;
         public int Order => -2;
         public string Name => "AniList";
-
-        public AniListSeasonProvider(ILogger<AniListSeasonProvider> logger)
-        {
-            _log = logger;
-            _aniListApi = new AniListApi();
-        }
 
         public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken)
         {
@@ -34,7 +26,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             var aid = info.ProviderIds.GetOrDefault(ProviderNames.AniList);
             if (!string.IsNullOrEmpty(aid))
             {
-                media = await _aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
+                media = await aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -46,11 +38,11 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
                     {
                         if (seasonIndex == 1)
                         {
-                            media = await _aniListApi.GetAnime(seriesId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+                            media = await aniListApi.GetAnime(seriesId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
                         }
                         else if (seasonIndex > 1)
                         {
-                            Media seriesInfo = await _aniListApi.GetAnime(seriesId, cancellationToken).ConfigureAwait(false);
+                            Media seriesInfo = await aniListApi.GetAnime(seriesId, cancellationToken).ConfigureAwait(false);
                             var seriesName = seriesInfo.GetPreferredTitle(config.TitlePreference, "en");
                             if (seriesName != null)
                             {
@@ -58,34 +50,34 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
                                     seriesName,
                                     seasonIndex?.ToString(CultureInfo.InvariantCulture) ?? string.Empty
                                 );
-                                MediaSearchResult msr = await _aniListApi.Search_GetSeries(searchQuery, cancellationToken);
+                                MediaSearchResult msr = await aniListApi.Search_GetSeries(searchQuery, cancellationToken);
                                 if (msr != null)
                                 {
-                                    media = await _aniListApi.GetAnime(seriesId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+                                    media = await aniListApi.GetAnime(seriesId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
                                 } 
                                 else 
                                 {
-                                    _log.LogError("No series found for query {Name}", searchQuery);
+                                    logger.LogError("No series found for query {Name}", searchQuery);
                                 }
                             }
                             else
                             {
-                                _log.LogError("Series doesn't have a title!");
+                                logger.LogError("Series doesn't have a title!");
                             }
                         }
                         else
                         {
-                            _log.LogInformation("Season is either a special season or an invalid index, skipping...");
+                            logger.LogInformation("Season is either a special season or an invalid index, skipping...");
                         }
                     }
                     else
                     {
-                        _log.LogError("Season doesn't have a valid index!");
+                        logger.LogError("Season doesn't have a valid index!");
                     }
                 }
                 else
                 {
-                    _log.LogError("Series doesn't have a valid ID!");
+                    logger.LogError("Series doesn't have a valid ID!");
                 }
             }
 
@@ -107,7 +99,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
             var aid = searchInfo.ProviderIds.GetOrDefault(ProviderNames.AniList);
             if (!string.IsNullOrEmpty(aid))
             {
-                Media aid_result = await _aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
+                Media aid_result = await aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
                 if (aid_result != null)
                 {
                     results.Add(aid_result.ToSearchResult());
@@ -116,7 +108,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
 
             if (!string.IsNullOrEmpty(searchInfo.Name))
             {
-                List<MediaSearchResult> name_results = await _aniListApi.Search_GetSeries_list(searchInfo.Name, cancellationToken).ConfigureAwait(false);
+                List<MediaSearchResult> name_results = await aniListApi.Search_GetSeries_list(searchInfo.Name, cancellationToken).ConfigureAwait(false);
                 foreach (var media in name_results)
                 {
                     results.Add(media.ToSearchResult());
@@ -128,7 +120,7 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = Plugin.Instance.GetHttpClient();
+            var httpClient = httpClientFactory.CreateClient();
 
             return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
         }
