@@ -20,75 +20,42 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
         public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken)
         {
             var result = new MetadataResult<Season>();
-            Media media = null;
+            var seasonIndex = info.IndexNumber ?? 1;
+            var anilistId = info.SeriesProviderIds.GetOrDefault(ProviderNames.AniList).ToString(CultureInfo.InvariantCulture);
             PluginConfiguration config = Plugin.Instance.Configuration;
-
-            var aid = info.ProviderIds.GetOrDefault(ProviderNames.AniList);
-            if (!string.IsNullOrEmpty(aid))
+            if (seasonIndex == 0)
             {
-                media = await aniListApi.GetAnime(aid, cancellationToken).ConfigureAwait(false);
+                logger.LogInformation("Special index detected, skipping...");
+                anilistId = "";
+            }
+            else if (seasonIndex == 1)
+            {
+                logger.LogInformation("Season 1 index detected, reusing series ID...");
             }
             else
             {
-                var seriesId = info.SeriesProviderIds.GetOrDefault(ProviderNames.AniList);
-                if (seriesId != null)
+                Media seriesInfo = await aniListApi.GetAnime(anilistId, cancellationToken).ConfigureAwait(false);
+                if (seriesInfo == null) {
+                    anilistId = "";
+                } else
                 {
-                    var seasonIndex = info.IndexNumber;
-                    if (seasonIndex != null)
-                    {
-                        if (seasonIndex == 1)
-                        {
-                            media = await aniListApi.GetAnime(seriesId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
-                        }
-                        else if (seasonIndex > 1)
-                        {
-                            Media seriesInfo = await aniListApi.GetAnime(seriesId, cancellationToken).ConfigureAwait(false);
-                            var seriesName = seriesInfo.GetPreferredTitle(config.TitlePreference, "en");
-                            if (seriesName != null)
-                            {
-                                var searchQuery = string.Join(" ",
-                                    seriesName,
-                                    seasonIndex?.ToString(CultureInfo.InvariantCulture) ?? string.Empty
-                                );
-                                MediaSearchResult msr = await aniListApi.Search_GetSeries(searchQuery, cancellationToken);
-                                if (msr != null)
-                                {
-                                    media = await aniListApi.GetAnime(seriesId.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
-                                } 
-                                else 
-                                {
-                                    logger.LogError("No series found for query {Name}", searchQuery);
-                                }
-                            }
-                            else
-                            {
-                                logger.LogError("Series doesn't have a title!");
-                            }
-                        }
-                        else
-                        {
-                            logger.LogInformation("Season is either a special season or an invalid index, skipping...");
-                        }
-                    }
-                    else
-                    {
-                        logger.LogError("Season doesn't have a valid index!");
-                    }
-                }
-                else
-                {
-                    logger.LogError("Series doesn't have a valid ID!");
+                    var seriesName = seriesInfo.GetPreferredTitle(config.TitlePreference, "en");
+                    var searchQuery = string.Join(" ",
+                        seriesName,
+                        seasonIndex.ToString(CultureInfo.InvariantCulture) ?? string.Empty
+                    );
+                    logger.LogInformation("Searching for {Name}", searchQuery);
+                    MediaSearchResult msr = await aniListApi.Search_GetSeries(searchQuery, cancellationToken);
+                    anilistId = msr.id.ToString(CultureInfo.InvariantCulture);
                 }
             }
-
-            if (media != null)
+            result.HasMetadata = true;
+            result.Item = new Season
             {
-                result.HasMetadata = true;
-                result.Item = media.ToSeason();
-                result.People = media.GetPeopleInfo();
-                result.Provider = ProviderNames.AniList;
-            }
-
+                IndexNumber = seasonIndex,
+                ProviderIds = new Dictionary<string, string>() { { ProviderNames.AniList, anilistId } }
+            };
+            result.Provider = ProviderNames.AniList;
             return result;
         }
 
@@ -120,9 +87,8 @@ namespace Jellyfin.Plugin.AniList.Providers.AniList
 
         public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
         {
-            var httpClient = httpClientFactory.CreateClient();
-
-            return await httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            var provider = new AniListAnimeImageProvider(aniListApi, httpClientFactory);
+            return await provider.GetImageResponse(url, cancellationToken);
         }
     }
 }
