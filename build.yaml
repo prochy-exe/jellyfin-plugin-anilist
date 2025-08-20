@@ -1,7 +1,7 @@
 name: "Prochy's AniList"
 guid: "666225e2-ef4a-4f89-9a7d-5050a816b1f5"
 imageUrl: "https://repo.jellyfin.org/releases/plugin/images/jellyfin-plugin-anilist.png"
-version: 12
+version: 13
 targetAbi: "10.10.7.0"
 framework: "net8.0"
 owner: "jellyfin"
